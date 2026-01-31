@@ -33,7 +33,7 @@ PROCESS:
 1. VALIDATE_INPUT:
    IF tokenType NOT IN [ONLINE_BOOKING, WALK_IN, PAID_PRIORITY, FOLLOW_UP, EMERGENCY]:
      THROW "Invalid token type"
-   
+
    priority ← PRIORITY_ORDER[tokenType]
    isEmergency ← (tokenType == EMERGENCY)
 
@@ -49,7 +49,7 @@ PROCESS:
 
 3. CAPACITY_CHECK:
    hasCapacity ← slot.hasAvailableCapacity(isEmergency)
-   
+
    IF NOT hasCapacity:
      IF isEmergency:
        TRY:
@@ -76,7 +76,7 @@ PROCESS:
      phoneNumber,
      notes
    })
-   
+
    tokenStore.addToken(token)
    slot.incrementCapacity()
    slotStore.updateSlot(slot)
@@ -95,13 +95,13 @@ SPACE COMPLEXITY: O(1) additional space
 
 ### 1.2 Complexity Analysis
 
-| Operation | Time Complexity | Space Complexity |
-|-----------|----------------|------------------|
-| Slot Selection | O(n log n) | O(n) |
-| Capacity Check | O(1) | O(1) |
-| Reallocation | O(m log m) | O(1) |
-| Token Generation | O(k) where k = tokens in slot | O(1) |
-| Overall | O(n log n + m log m + k) | O(n) |
+| Operation        | Time Complexity               | Space Complexity |
+| ---------------- | ----------------------------- | ---------------- |
+| Slot Selection   | O(n log n)                    | O(n)             |
+| Capacity Check   | O(1)                          | O(1)             |
+| Reallocation     | O(m log m)                    | O(1)             |
+| Token Generation | O(k) where k = tokens in slot | O(1)             |
+| Overall          | O(n log n + m log m + k)      | O(n)             |
 
 ---
 
@@ -132,7 +132,7 @@ PROCESS:
    FOR EACH slot IN allSlots:
      IF slot.isActive AND slot.hasAvailableCapacity(isEmergency):
        availableSlots.APPEND(slot)
-   
+
    IF availableSlots.length == 0:
      RETURN NULL
 
@@ -202,14 +202,14 @@ PROCESS:
 
 2. GET_REALLOCATABLE_TOKENS:
    allTokens ← tokenStore.getTokensBySlot(slot.id)
-   activeTokens ← FILTER(allTokens, t => 
+   activeTokens ← FILTER(allTokens, t =>
      t.state == ALLOCATED OR t.state == CHECKED_IN
    )
-   
-   reallocatableTokens ← FILTER(activeTokens, t => 
+
+   reallocatableTokens ← FILTER(activeTokens, t =>
      t.state == ALLOCATED  // Not checked in
    )
-   
+
    IF reallocatableTokens.length == 0:
      THROW "No reallocatable tokens (all checked in)"
 
@@ -223,13 +223,13 @@ PROCESS:
      slot.date,
      false  // Not emergency for reallocated token
    )
-   
+
    IF alternativeSlot IS NULL OR alternativeSlot.id == slot.id:
      THROW "No alternative slot available"
 
 5. PERFORM_REALLOCATION:
    oldSlotId ← tokenToReallocate.slotId
-   
+
    // Update token
    tokenToReallocate.slotId ← alternativeSlot.id
    tokenToReallocate.tokenNumber ← generateTokenNumber(alternativeSlot)
@@ -237,14 +237,14 @@ PROCESS:
      alternativeSlot,
      tokenToReallocate.tokenNumber
    )
-   tokenToReallocate.notes ← tokenToReallocate.notes + 
+   tokenToReallocate.notes ← tokenToReallocate.notes +
      "\n[Reallocated from " + slot.startTime + "-" + slot.endTime +
      " to " + alternativeSlot.startTime + "-" + alternativeSlot.endTime + "]"
-   
+
    // Update capacities
    slot.decrementCapacity()
    alternativeSlot.incrementCapacity()
-   
+
    // Persist changes
    tokenStore.updateToken(tokenToReallocate)
    slotStore.updateSlot(slot)
@@ -265,13 +265,13 @@ SPACE COMPLEXITY: O(m) for token filtering
 
 ### 3.2 Reallocation Decision Matrix
 
-| Condition | Action |
-|-----------|--------|
-| Has unchecked token + Alternative slot | ✅ Reallocate |
-| Has unchecked token + No alternative | ❌ Use emergency buffer or fail |
-| All checked in + Emergency buffer available | ✅ Use buffer |
-| All checked in + No buffer | ❌ Fail |
-| Mixed priorities | Reallocate lowest priority first |
+| Condition                                   | Action                           |
+| ------------------------------------------- | -------------------------------- |
+| Has unchecked token + Alternative slot      | Reallocate                       |
+| Has unchecked token + No alternative        | Use emergency buffer or fail     |
+| All checked in + Emergency buffer available | Use buffer                       |
+| All checked in + No buffer                  | Fail                             |
+| Mixed priorities                            | Reallocate lowest priority first |
 
 ---
 
@@ -307,7 +307,7 @@ PROCESS:
 4. CONVERT_TO_TIME:
    estimatedHours ← FLOOR(totalMinutes / 60)
    estimatedMins ← totalMinutes MOD 60
-   
+
    timeString ← PAD(estimatedHours, 2) + ':' + PAD(estimatedMins, 2)
 
 5. RETURN:
@@ -318,7 +318,7 @@ EXAMPLE:
   Token #3
   AVG_CONSULTATION_TIME: 15 min
   Delay: 10 min
-  
+
   Calculation:
     Base: 09:00 = 540 minutes
     Offset: (3-1) × 15 = 30 minutes
@@ -352,7 +352,7 @@ PROCESS:
 1. VALIDATE_INPUT:
    IF delayMinutes < 0:
      THROW "Delay must be positive"
-   
+
    slot ← slotStore.getSlot(slotId)
    IF slot IS NULL:
      THROW "Slot not found"
@@ -363,10 +363,10 @@ PROCESS:
 
 3. RECALCULATE_TIMES:
    tokens ← tokenStore.getTokensBySlot(slotId)
-   activeTokens ← FILTER(tokens, t => 
+   activeTokens ← FILTER(tokens, t =>
      t.state == ALLOCATED OR t.state == CHECKED_IN
    )
-   
+
    FOR EACH token IN activeTokens:
      token.estimatedTime ← calculateEstimatedTime(slot, token.tokenNumber)
      tokenStore.updateToken(token)
@@ -407,10 +407,10 @@ PROCESS:
    token ← tokenStore.getToken(tokenId)
    IF token IS NULL:
      THROW "Token not found"
-   
+
    IF token.state == CANCELLED:
      THROW "Token already cancelled"
-   
+
    IF token.state == CONSULTED:
      THROW "Cannot cancel completed consultation"
 
@@ -456,7 +456,7 @@ PROCESS:
 
 1. GET_ACTIVE_TOKENS:
    allTokens ← tokenStore.getTokensBySlot(slot.id)
-   activeTokens ← FILTER(allTokens, t => 
+   activeTokens ← FILTER(allTokens, t =>
      t.state == ALLOCATED OR t.state == CHECKED_IN
    )
 
@@ -474,7 +474,7 @@ EXAMPLE:
   Before cancellation: [1, 2, 3, 4, 5]
   Cancel token #3
   After renumbering: [1, 2, 3, 4]
-  
+
   Token #4 becomes #3, time updated
   Token #5 becomes #4, time updated
 ```
@@ -503,14 +503,14 @@ CONSULTED
 
 ### 7.2 Transition Rules
 
-| From State | To State | Condition | Action |
-|------------|----------|-----------|--------|
-| ALLOCATED | CHECKED_IN | Patient arrives | Set checkedInAt |
-| ALLOCATED | CANCELLED | Before appointment | Free capacity |
-| ALLOCATED | NO_SHOW | Past appointment time | Free capacity |
-| CHECKED_IN | CONSULTED | Consultation done | Set consultedAt |
-| CHECKED_IN | NO_SHOW | Patient leaves | Free capacity |
-| Any | CANCELLED | Before CONSULTED | Free capacity |
+| From State | To State   | Condition             | Action          |
+| ---------- | ---------- | --------------------- | --------------- |
+| ALLOCATED  | CHECKED_IN | Patient arrives       | Set checkedInAt |
+| ALLOCATED  | CANCELLED  | Before appointment    | Free capacity   |
+| ALLOCATED  | NO_SHOW    | Past appointment time | Free capacity   |
+| CHECKED_IN | CONSULTED  | Consultation done     | Set consultedAt |
+| CHECKED_IN | NO_SHOW    | Patient leaves        | Free capacity   |
+| Any        | CANCELLED  | Before CONSULTED      | Free capacity   |
 
 ### 7.3 Invalid Transitions
 
@@ -541,7 +541,7 @@ Example:
   maxCapacity = 5
   emergencyBuffer = 1 (20%)
   currentCapacity = 5
-  
+
   Regular available: 0
   Emergency available: 1
 ```
@@ -583,14 +583,14 @@ AllocationError (Base)
 
 ### 9.2 Error Recovery Strategies
 
-| Error Type | Recovery Strategy |
-|------------|------------------|
-| Slot Full (Regular) | Suggest alternative slots |
-| Slot Full (Emergency) | Attempt reallocation |
-| Reallocation Failed | Use emergency buffer |
-| No Alternative Slots | Suggest next day |
-| Invalid State | Return clear error message |
-| Token Not Found | Return 404 with details |
+| Error Type            | Recovery Strategy          |
+| --------------------- | -------------------------- |
+| Slot Full (Regular)   | Suggest alternative slots  |
+| Slot Full (Emergency) | Attempt reallocation       |
+| Reallocation Failed   | Use emergency buffer       |
+| No Alternative Slots  | Suggest next day           |
+| Invalid State         | Return clear error message |
+| Token Not Found       | Return 404 with details    |
 
 ---
 
@@ -617,6 +617,7 @@ AllocationError (Base)
 ### 10.2 Future Optimizations
 
 1. **Database Indexing**
+
    ```sql
    CREATE INDEX idx_tokens_slot ON tokens(slotId, state);
    CREATE INDEX idx_slots_doctor_date ON slots(doctorId, date, isActive);
@@ -717,12 +718,12 @@ AllocationError (Base)
 
 This algorithm provides a robust, scalable solution for OPD token allocation with:
 
-- ✅ Deterministic behavior
-- ✅ Fair prioritization
-- ✅ Emergency handling
-- ✅ Efficient performance
-- ✅ Clear error handling
-- ✅ Real-world edge case management
+- Deterministic behavior
+- Fair prioritization
+- Emergency handling
+- Efficient performance
+- Clear error handling
+- Real-world edge case management
 
 **Time Complexity**: O(n log n + m log m) - Optimal for this problem
 **Space Complexity**: O(n + m) - Linear with data size
